@@ -751,3 +751,210 @@ def test_end_lines_nested_bodies():
 def test_end_line_of_unclosed_body_is_last_line():
     src = "function open() {\n  work()\n\n"
     assert names(src, "javascript") == [("open", 1, 2)]
+
+
+# ---------------------------------------------------------------- Markdown
+
+
+def test_markdown_atx_sections_include_subsections():
+    src = (
+        "# Guide\n"
+        "\n"
+        "Intro text.\n"
+        "\n"
+        "## Install\n"
+        "Run the installer.\n"
+        "\n"
+        "### From source\n"
+        "make install\n"
+        "\n"
+        "## Usage ##\n"
+        "\n"
+        "Call it.\n"
+        "\n"
+        "# Appendix\n"
+        "Notes.\n"
+        "\n"
+        "\n"
+    )
+    assert names(src, "markdown") == [
+        ("# Guide", 1, 13), ("## Install", 5, 9), ("### From source", 8, 9),
+        ("## Usage", 11, 13), ("# Appendix", 15, 16)]
+
+
+def test_markdown_heading_text_keeps_inline_markup_and_collapses_spaces():
+    src = "###   The `run`   *command*  \n\n#hashtag is not a heading\n   ## Indented\n"
+    assert names(src, "markdown") == [("### The `run` *command*", 1, 3), ("## Indented", 4, 4)]
+
+
+def test_markdown_setext_headings():
+    src = (
+        "Project\n"
+        "=======\n"
+        "\n"
+        "Overview text\n"
+        "\n"
+        "Details\n"
+        "-------\n"
+        "More text\n"
+        "\n"
+        "---\n"
+        "\n"
+        "Closing words\n"
+    )
+    assert names(src, "markdown") == [("# Project", 1, 12), ("## Details", 6, 12)]
+
+
+def test_markdown_fenced_code_is_not_scanned():
+    src = (
+        "# Real\n"
+        "```bash\n"
+        "# not a heading\n"
+        "```\n"
+        "~~~~\n"
+        "## also not\n"
+        "~~~\n"
+        "Title\n"
+        "---\n"
+        "~~~~\n"
+        "## After\n"
+        "````\n"
+        "# never closed by a shorter fence\n"
+        "```\n"
+    )
+    assert names(src, "markdown") == [("# Real", 1, 14), ("## After", 11, 14)]
+
+
+def test_markdown_unclosed_fence_swallows_the_rest():
+    src = "# Top\n\n```\n# comment\n\n## still code\n"
+    assert names(src, "markdown") == [("# Top", 1, 6)]
+
+
+def test_markdown_front_matter_is_skipped():
+    src = "---\ntitle: Doc\n# yaml comment\n---\n# Heading\nBody\n"
+    assert names(src, "markdown") == [("# Heading", 5, 6)]
+    assert names("---\nnot closed\n# Heading\n", "markdown") == [("# Heading", 3, 3)]
+
+
+def test_markdown_without_headings_returns_nothing():
+    assert names("Just a paragraph.\n\n- item\n- item\n\n---\n", "markdown") == []
+    assert names("", "markdown") == []
+
+
+def test_markdown_file_dispatch(tmp_path):
+    f = tmp_path / "README.MD"
+    f.write_bytes("﻿# 제목\r\n\r\n본문\r\n".encode("utf-8"))
+    assert extract_symbols(f) == [("# 제목", 1, 3)]
+
+
+# ---------------------------------------------------------------- CSS
+
+
+def test_css_plain_rules_and_selector_lists():
+    src = (
+        ":root {\n"
+        "  --gap: 4px;\n"
+        "}\n"
+        "\n"
+        ".card > .title,\n"
+        "h2.title {\n"
+        "  color: red;\n"
+        "}\n"
+        "a:hover { color: blue }\n"
+    )
+    assert names(src, "css") == [(":root", 1, 3), (".card > .title, h2.title", 5, 8), ("a:hover", 9, 9)]
+
+
+def test_css_at_rules_and_nested_rules():
+    src = (
+        "@import url('base.css');\n"
+        "@charset \"utf-8\";\n"
+        "@media (max-width: 600px) {\n"
+        "  .card {\n"
+        "    padding: 0;\n"
+        "  }\n"
+        "  .card:hover {\n"
+        "    color: red;\n"
+        "  }\n"
+        "}\n"
+        ".menu {\n"
+        "  color: black;\n"
+        "  &:hover {\n"
+        "    color: gray;\n"
+        "  }\n"
+        "}\n"
+    )
+    assert names(src, "css") == [
+        ("@media (max-width: 600px)", 3, 10),
+        ("@media (max-width: 600px) > .card", 4, 6),
+        ("@media (max-width: 600px) > .card:hover", 7, 9),
+        (".menu", 11, 16),
+        (".menu > &:hover", 13, 15)]
+
+
+def test_css_keyframes_and_font_face_are_not_expanded():
+    src = (
+        "@font-face {\n"
+        "  font-family: X;\n"
+        "  src: url(x.woff2) format('woff2');\n"
+        "}\n"
+        "@keyframes spin {\n"
+        "  from { transform: rotate(0) }\n"
+        "  50% { opacity: .5 }\n"
+        "  to { transform: rotate(360deg) }\n"
+        "}\n"
+        "@supports (display: grid) {\n"
+        "  @-webkit-keyframes pulse { to { opacity: 0 } }\n"
+        "  .grid { display: grid }\n"
+        "}\n"
+    )
+    assert names(src, "css") == [
+        ("@font-face", 1, 4), ("@keyframes spin", 5, 9), ("@supports (display: grid)", 10, 13),
+        ("@supports (display: grid) > @-webkit-keyframes pulse", 11, 11),
+        ("@supports (display: grid) > .grid", 12, 12)]
+
+
+def test_css_comments_and_strings_do_not_open_blocks():
+    src = (
+        "/* .ghost { */\n"
+        ".a::after { content: \"}\"; }\n"
+        "/* multi\n"
+        "   line } */\n"
+        ".b { background: url(data:image/svg+xml;utf8,<svg>{</svg>) }\n"
+        ".c /* inline { */ .d { content: '{' }\n"
+        "a[title=\"x{y\"] { color: red }\n"
+    )
+    assert names(src, "css") == [
+        (".a::after", 2, 2), (".b", 5, 5), (".c .d", 6, 6), ("a[title=\"x{y\"]", 7, 7)]
+
+
+def test_css_custom_property_with_braces_does_not_break_scanner():
+    src = (
+        ":root {\n"
+        "  --empty: {};\n"
+        "  --json: { \"a\": { \"b\": 1 } };\n"
+        "  --last: {x}\n"
+        "}\n"
+        ".after { color: red }\n"
+    )
+    assert names(src, "css") == [(":root", 1, 5), (".after", 6, 6)]
+
+
+@pytest.mark.parametrize("src,expected", [
+    (".a { color: red;\n  .b { x: y }\n\n", [(".a", 1, 2), (".a > .b", 2, 2)]),
+    ("} } .a { }\n}\n", [(".a", 1, 1)]),
+    ("{ } .a { }\n", [(".a", 1, 1)]),
+    ("@media screen {\n  .a {\n", [("@media screen", 1, 2), ("@media screen > .a", 2, 2)]),
+    ("/* never closed\n.a { }\n", []),
+    (".a { content: \"open\n}\n.b { }\n", [(".a", 1, 2), (".b", 3, 3)]),
+    ("--x: {\n.a { }\n", []),
+    ("", []),
+])
+def test_css_malformed_input_never_raises(src, expected):
+    assert names(src, "css") == expected
+
+
+def test_css_file_dispatch(tmp_path):
+    f = tmp_path / "site.css"
+    f.write_bytes(b".a {\r\n  color: red;\r\n}\r\n")
+    assert extract_symbols(f) == [(".a", 1, 3)]
