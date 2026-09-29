@@ -24,8 +24,8 @@ claude --plugin-dir /path/to/agent-librarian
 
 - **Standard library only.** Code under `scripts/` must run on Python 3.9+ with nothing but the standard library. Do not add runtime dependencies. Keep `from __future__ import annotations` at the top of each module so newer type syntax stays 3.9-compatible.
 - **Development tools are the exception.** Files under `dev/` may use extra packages (for example `tree-sitter-language-pack`), because they are never run by users.
-- **Support both Claude Code and Codex.** The plugin follows the [Agent Plugins](https://agent-plugins.org/) layout and runs on both agents. When you add or change a hook in `hooks/hooks.json`:
-  - Read the plugin root from `CLAUDE_PLUGIN_ROOT` or `PLUGIN_ROOT`.
+- **Claude Code only.** The plugin supports only Claude Code, and its manifest is `.claude-plugin/plugin.json`. Do not add support for other agents. When you add or change a hook in `hooks/hooks.json`:
+  - Read the plugin root from `CLAUDE_PLUGIN_ROOT`.
   - Keep the `python3 ... || python ...` fallback, since either name may be missing.
   - Copy the command format of the existing hooks.
 - **Hooks never break the session.** A hook must not raise an error that stops the user's work. Catch failures, report them on stderr, and let the session continue (see `cmd_hook` in `scripts/librarian.py`).
@@ -35,8 +35,9 @@ claude --plugin-dir /path/to/agent-librarian
 These rules are the core of the project. Changes that break them will not be accepted.
 
 - **Generated documents never describe what a function or file does.** The index lists only file, function, start line and end line. Describing behavior invites wrong descriptions (hallucination).
-- **Only the script writes the index block.** Nothing else may edit the content between `<!-- librarian:index:start -->` and `<!-- librarian:index:end -->`.
-- **Roles written by people or agents are never lost.** Any change to document generation must keep existing role text.
+- **Only the script writes the index.** Nothing else may edit the content between `<!-- librarian:index:start -->` and `<!-- librarian:index:end -->`, the generated `index.md`, or the files in the generated `index/` folder.
+- **Generated files are overwritten or deleted only when they carry the generated marker.** Generated files begin with `<!-- librarian:generated -->`. A human-written `index.md` or a source folder named `index` is never touched.
+- **Roles written by people or agents are never lost.** Any change to document generation must keep existing role text and the text of the notes section. The script always generates the notes heading but never fills it in.
 
 ## Language
 

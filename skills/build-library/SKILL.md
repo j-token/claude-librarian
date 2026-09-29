@@ -15,11 +15,7 @@ Ask with an interactive question tool if one is available; otherwise ask in a no
 1. **Library language**: the language the folder documents are written in.
    - `en` (English, default) or `ko` (Korean) have built-in headings.
    - Any other language is also accepted, e.g. `ja`. Headings stay in English, and roles are written in that language.
-2. **Folder document name**
-   - `CLAUDE.md`: Claude Code only
-   - `AGENTS.md`: Codex and other agents
-   - `both`: the content goes in AGENTS.md, and CLAUDE.md contains only `@AGENTS.md`
-3. **Additional paths to exclude**
+2. **Additional paths to exclude**
    - Excluded by default: paths in `.gitignore`, folders starting with a dot, `node_modules`, `dist`, `build`, and similar
 
 ## 2. Check Python
@@ -33,7 +29,7 @@ The plugin needs only Python 3.9 or later; it has no other dependencies. If Pyth
 ## 3. Install
 
 ```bash
-python <plugin>/scripts/librarian.py init --language <answer 1> --doc <answer 2> [--exclude <answer 3>...]
+python <plugin>/scripts/librarian.py init --language <answer 1> [--exclude <answer 2>...]
 python <plugin>/scripts/librarian.py scaffold
 ```
 
@@ -50,6 +46,3 @@ If `python <plugin>/scripts/librarian.py pending` lists any folders, fill them i
 - Explain what happens from now on:
   - When a file is edited, a hook updates the index.
   - At the end of each turn, a check hook fixes documents that no longer match the code and asks the agent to fill in any folder whose role is empty or missing.
-- Tell Codex users two things:
-  - `~/.codex/config.toml` needs `[features] hooks = true`.
-  - Codex runs an installed plugin's hooks only after they are trusted once in `/hooks`.

@@ -1,6 +1,6 @@
 ---
 name: update-library
-description: Brings an existing agent-librarian library up to date with the installed plugin version. Updates the config keys, removes the rules skill links older versions installed, and reformats every folder document.
+description: Brings an existing agent-librarian library up to date with the installed plugin version. Updates the config keys, removes the rules skill links older versions installed, converts AGENTS.md folder documents to CLAUDE.md, and reformats every folder document.
 disable-model-invocation: true
 ---
 
@@ -16,10 +16,11 @@ This updates the library in the project. To update the plugin itself, the user r
 python <plugin>/scripts/librarian.py update
 ```
 
-It does three things:
-- Fills in missing keys in `.librarian/config.json` with their defaults, removes keys of removed features, and records the current plugin version in `libraryVersion`.
+It does four things:
+- Fills in missing keys in `.librarian/config.json` with their defaults (for example `maxDocLines`, the line limit of a document, default 200), removes keys of removed features, and records the current plugin version in `libraryVersion`.
 - Removes what older versions installed for the `librarian-guide` rules skill: its links under `.claude/skills`, `.agents/skills`, and `.codex/skills` (and those folders when they end up empty), and their `.gitignore` entries. A copied folder there whose files differ from `.librarian/skills/librarian-guide` is left in place with a `warning`.
-- Rewrites every folder document in the current format. Roles that are already written are kept, and the old one-line pointer to the rules skill is removed from the root document.
+- Rewrites every folder document in the current format. Roles that are already written are kept, an empty notes section (`## Notes`, or `## 메모` in Korean) is added to documents that lack one, and the old one-line pointer to the rules skill is removed from the root document. When an index table is longer than `maxDocLines`, it is moved into `index.md` (and further into an `index/` folder) automatically, and levels that are no longer needed are merged back.
+- Converts folder documents that older versions wrote as `AGENTS.md` (the `docName` setting, including the `both` mode where `CLAUDE.md` held only `@AGENTS.md`) to `CLAUDE.md`. The folder document is always `CLAUDE.md` now, and the plugin supports only Claude Code.
 
 ## 2. Leftover rules skill folder
 

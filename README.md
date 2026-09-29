@@ -18,13 +18,16 @@ This plugin makes AI follow the rules that humans built libraries on.
 
 ## What the library looks like
 
-Every folder has one document (`CLAUDE.md` or `AGENTS.md`).
+Every folder has one document, `CLAUDE.md`.
 
 ```markdown
 # Parent: ../CLAUDE.md
 
 ## What this folder is for
 Holds the billing and invoicing code.              ← written by an agent or a human
+
+## Notes
+Amounts are integer cents.                         ← written by a human or an agent
 
 ## Subfolders
 | Folder | Role |
@@ -43,28 +46,50 @@ The first thing the install commands ask is the **library language**: the langua
 - The root document describes only the role of each top-level folder. Each folder document describes only the folders directly beneath it.
 - A script generates the file, function, start line, and end line entries. An agent reads a function by opening the file from its start line to its end line, instead of guessing where the function ends. **The documents never describe what a function does.** This prevents hallucination, where an AI misreads a function and writes down a wrong description of it.
 - When a file is edited, a hook updates the line numbers right away. At the end of every turn, a check hook fixes any mismatch between the documents and the code, and asks the agent to fill in any folder whose role is still empty.
+- At the start of every session, a `SessionStart` hook reports rule files (under `.claude/rules/`) and folder `CLAUDE.md` files whose text, not counting the index block, is longer than `maxDocLines` lines. `check` reports the same as warnings. The agent then splits such a document by topic. See the `rule-creator` skill below.
 - The reasoning behind the design is written up in the [knowledge management research notes](docs/research/knowledge-management.md) (in Korean).
+
+### Long folders and progressive disclosure
+
+A folder with many functions would make its `CLAUDE.md` too long to read cheaply. When the `CLAUDE.md` of a folder would exceed `maxDocLines` lines (default 200, the size Claude Code recommends for a `CLAUDE.md`), the script splits the index into levels, so the agent reads only as much as it needs:
+
+1. `CLAUDE.md` stays small. Its index block holds only a link to `index.md`.
+2. `index.md` holds the index table. If it would also exceed `maxDocLines` lines, it becomes a list of links to the per-file indexes.
+3. `index/` holds one index file per source file, for example `index/invoice.py.md`. This level exists only when `index.md` is too long.
+
+```
+billing/
+├── CLAUDE.md          # role, notes, subfolders, and a link to index.md
+├── index.md           # links to the per-file indexes
+└── index/
+    ├── invoice.py.md  # every function of invoice.py, with start and end lines
+    └── tax.py.md
+```
+
+The agent reads the small `CLAUDE.md`, then `index.md`, then only the per-file index it needs. The levels revert by themselves when the content shrinks again.
+
+Every generated file begins with `<!-- librarian:generated -->`, and only files with that marker are ever overwritten or deleted. A human-written `index.md`, or a source folder named `index`, is never touched: the script warns and keeps the index at a lower level instead. Never edit `index.md` or the files in `index/`. The script writes them.
 
 Installing the library adds the following to your project:
 
 ```
-.librarian/config.json                  # library language, document name, excluded paths, folder depth warning threshold (maxDepth),
-                                        # plugin version the library was built with (libraryVersion)
-<every folder>/CLAUDE.md or AGENTS.md   # the folder document
+.librarian/config.json    # library language, excluded paths, folder depth warning threshold (maxDepth),
+                          # line limit of a document (maxDocLines, default 200),
+                          # plugin version the library was built with (libraryVersion)
+<every folder>/CLAUDE.md  # the folder document
 ```
+
+## Rule-creator skill
+
+The plugin also ships a `rule-creator` skill. It is meant for two situations: a mistake is likely to repeat, or Claude is likely to make it again because the context that would prevent it is missing. When you ask Claude to remember a rule ("from now on, when you edit X, do Y"), it decides where the rule belongs: a `.claude/rules/` file scoped to the files it concerns, the document that explains a command, or the notes section (`## Notes`) of a folder's `CLAUDE.md`, outside the generated index block. It also rewrites a narrow instruction into the general principle behind it, so that one rule covers a whole class of cases. When a rule file or a folder `CLAUDE.md` grows past `maxDocLines` lines, the skill also splits it by topic and leaves a one-line pointer for each moved topic.
 
 ## Requirements
 
+- Claude Code. This plugin supports Claude Code only.
 - Python 3.9 or later. Nothing else to install: the index is built with the Python standard library only.
-- Supported languages: Python, JavaScript/TypeScript/TSX, Go, Rust, Java, C/C++, C#
-
-This plugin follows the [Agent Plugins](https://agent-plugins.org/) specification (a `plugin.json` at the root), so it works in both Claude Code and Codex.
-
-### Using it with Codex
-
-- Turn on `[features] hooks = true` in `~/.codex/config.toml`.
-- After installing, you must trust this plugin's hooks once in `/hooks` before they will run.
-- Codex has no subagent definitions, so when you run `/rebuild-library` the agent processes folders one at a time, in order.
+- Supported languages: Python, JavaScript/TypeScript/TSX, Go, Rust, Java, C/C++, C#, CSS, Markdown
+  - Markdown files are indexed by their table of contents: each heading (`## Install`) with the lines its section spans.
+  - CSS files are indexed by rule: each selector or at-rule (`@media (max-width: 600px) > .card`) with the lines it spans.
 
 ## Instructions for humans
 
@@ -72,7 +97,7 @@ This plugin follows the [Agent Plugins](https://agent-plugins.org/) specificatio
 
 You only need Python 3.9 or later.
 
-**Claude Code**: run these inside Claude Code, then run `/reload-plugins`.
+Run these inside Claude Code, then run `/reload-plugins`.
 
 ```
 /plugin marketplace add j-token/agent-librarian
@@ -86,15 +111,6 @@ claude plugin marketplace add j-token/agent-librarian
 claude plugin install agent-librarian@agent-librarian
 ```
 
-**Codex**: run these in a terminal.
-
-```bash
-codex plugin marketplace add j-token/agent-librarian
-codex plugin add agent-librarian@agent-librarian
-```
-
-Then turn on `[features] hooks = true` in `~/.codex/config.toml`, start Codex, and trust this plugin's hooks in `/hooks`.
-
 Once the plugin is installed, build your "library" with one of the commands below.
 
 ### If you have an existing codebase
@@ -107,7 +123,7 @@ Once the plugin is installed, build your "library" with one of the commands belo
 
 2. Answer the questions it asks, starting with the library language.
 
-3. Check that the folder roles written in each CLAUDE.md or AGENTS.md look right to you.
+3. Check that the folder roles written in each CLAUDE.md look right to you.
 
 ### If you are starting without a codebase
 
@@ -117,11 +133,11 @@ Once the plugin is installed, build your "library" with one of the commands belo
 
 2. Answer the questions it asks, starting with the library language.
 
-3. Check the root CLAUDE.md or AGENTS.md and the settings in `.librarian/config.json`.
+3. Check the root CLAUDE.md and the settings in `.librarian/config.json`.
 
 ### After updating the plugin
 
-Updating the plugin (`/plugin update`) does not change a library that already exists. When the check hook says the library was built with an older version, run `/update-library`. It updates the config keys and rewrites every folder document in the current format while keeping the roles you wrote. Libraries built with older versions also had a rules skill (`librarian-guide`); `/update-library` (and `/rebuild-library`) removes its links and `.gitignore` entries, and tells you to delete `.librarian/skills/librarian-guide` yourself once you have kept anything you added there.
+Updating the plugin (`/plugin update`) does not change a library that already exists. When the check hook says the library was built with an older version, run `/update-library`. It updates the config keys and rewrites every folder document in the current format while keeping the roles you wrote. Folder documents that older versions wrote as `AGENTS.md` are converted to `CLAUDE.md`. Libraries built with older versions also had a rules skill (`librarian-guide`); `/update-library` (and `/rebuild-library`) removes its links and `.gitignore` entries, and tells you to delete `.librarian/skills/librarian-guide` yourself once you have kept anything you added there.
 
 ## Instructions for agents
 
@@ -130,10 +146,9 @@ This section is for AI agents asked to install or use this plugin for a user.
 ### Installing for a user
 
 1. Check that `python --version` reports 3.9 or later. If Python is missing, ask the user to install it; the plugin has no other dependencies.
-2. Install the plugin with the terminal commands from "Install" above: the `claude plugin …` commands for Claude Code, or the `codex plugin …` commands for Codex.
+2. Install the plugin with the `claude plugin …` terminal commands from "Install" above.
 3. Some steps need the user and you cannot do them yourself. Ask the user to:
    - run `/reload-plugins` in Claude Code;
-   - in Codex, set `[features] hooks = true` and trust this plugin's hooks in `/hooks`;
    - run `/rebuild-library` (existing codebase) or `/build-library` (new project). These skills cannot be invoked by a model, and they ask the user questions such as the library language.
 4. Tell the user that `/rebuild-library` reads the whole codebase and costs tokens in proportion to the number of folders.
 
@@ -142,12 +157,13 @@ This section is for AI agents asked to install or use this plugin for a user.
 A project has a library if `.librarian/config.json` exists at its root. The hooks tell you when something needs your attention. The essentials:
 
 - Folder documents give each folder's role and, for code, only `file · function · start line · end line`. Before relying on anything, open the file and read it from the start line to the end line. Never infer what a function does from its name.
-- Never write what a function or file does, and never edit the `<!-- librarian:index:start/end -->` block. Hooks keep it up to date.
+- Never write what a function or file does, and never edit the `<!-- librarian:index:start/end -->` block, `index.md`, or the `index/` folder. Hooks keep them up to date.
 - When you create a folder, fill in its role section and its role cell in the parent's subfolder table, in the library language (`language` in `.librarian/config.json`).
 - If the stop hook asks you to fill in empty roles, read the code and fill them in. Write about the folder's role only.
 - Look up reverse references (who calls what) with grep or LSP. They are not recorded in the documents.
 - If a hook warns that folders are nested too deep, tell the user. Do not restructure folders on your own.
 - If the stop hook says the library was built with an older plugin version, ask the user to run `/update-library`. It cannot be invoked by a model.
+- To record a new working rule for the project, use the `rule-creator` skill. Write folder rules in the notes section of that folder's `CLAUDE.md`, never inside the index block.
 
 ## Contributing
 

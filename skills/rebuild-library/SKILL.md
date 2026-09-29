@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 ## 0. Cost warning
 
-Before starting, tell the user: this reads the whole codebase and writes a role for every folder, so token cost grows with the number of folders. In Claude Code it uses Sonnet subagents.
+Before starting, tell the user: this reads the whole codebase and writes a role for every folder, so token cost grows with the number of folders. It uses Sonnet subagents.
 
 ## 1. Questions and dependencies
 
@@ -19,7 +19,7 @@ Follow steps 1–2 of `<plugin>/skills/build-library/SKILL.md` exactly. The libr
 ## 2. Generate the mechanical parts first
 
 ```bash
-python <plugin>/scripts/librarian.py init --language <answer 1> --doc <answer 2> [--exclude <answer 3>...]
+python <plugin>/scripts/librarian.py init --language <answer 1> [--exclude <answer 2>...]
 python <plugin>/scripts/librarian.py scaffold
 python <plugin>/scripts/librarian.py index --all
 ```
@@ -30,11 +30,9 @@ After this, every folder has a document and every index (file · function · sta
 
 `python <plugin>/scripts/librarian.py pending` lists the folders whose roles are empty, deepest first. A parent can only summarize its children in one line once their roles exist, so **keep this order.**
 
-- **If you can use subagents** (Claude Code):
-  - Hand folders of the same depth to `folder-cataloger` agents in parallel, about 5–10 folders per agent.
-  - Give each agent three things: its folder document paths, the rules file path `<plugin>/skills/rebuild-library/references/cataloger.md`, and the library language.
-  - Finish one depth completely before moving to the next, shallower one.
-- **If you cannot use subagents** (Codex and others): read `references/cataloger.md` and fill in the folders yourself, one at a time, in the same order.
+- Hand folders of the same depth to `folder-cataloger` subagents in parallel, about 5–10 folders per agent.
+- Give each agent three things: its folder document paths, the rules file path `<plugin>/skills/rebuild-library/references/cataloger.md`, and the library language.
+- Finish one depth completely before moving to the next, shallower one.
 
 ## 4. Verify and report
 

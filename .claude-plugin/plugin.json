@@ -1,0 +1,10 @@
+{
+  "name": "agent-librarian",
+  "version": "0.5.0",
+  "description": "Organizes a codebase like a library with a CLAUDE.md in every folder. The file · function · start/end line index is generated automatically, with no dependencies beyond Python.",
+  "author": {
+    "name": "jungminjo"
+  },
+  "license": "Apache-2.0",
+  "keywords": ["documentation", "knowledge-management", "claude-md"]
+}
