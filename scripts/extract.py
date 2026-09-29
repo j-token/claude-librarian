@@ -1,4 +1,4 @@
-"""Dependency-free symbol extractor for agent-librarian.
+"""Dependency-free symbol extractor for claude-librarian.
 
 extract_symbols(path) returns [(name, start_line, end_line)] with 1-based, inclusive lines.
 The start line is the line that holds the declaration's name; the end line is the last line

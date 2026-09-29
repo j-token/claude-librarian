@@ -1,6 +1,6 @@
 ---
 name: update-library
-description: Brings an existing agent-librarian library up to date with the installed plugin version. Updates the config keys, removes the rules skill links older versions installed, converts AGENTS.md folder documents to CLAUDE.md, and reformats every folder document.
+description: Brings an existing claude-librarian library up to date with the installed plugin version. Updates the config keys, removes the rules skill links older versions installed, converts AGENTS.md folder documents to CLAUDE.md, and reformats every folder document.
 disable-model-invocation: true
 ---
 

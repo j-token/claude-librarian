@@ -1,4 +1,4 @@
-# Contributing to agent-librarian
+# Contributing to claude-librarian
 
 Thank you for helping. This guide lists the rules a change must follow before it can be merged.
 
@@ -17,7 +17,7 @@ By submitting a contribution, you agree that it is licensed under the [Apache Li
 To try your change in a real session, load the plugin from your checkout:
 
 ```bash
-claude --plugin-dir /path/to/agent-librarian
+claude --plugin-dir /path/to/claude-librarian
 ```
 
 ## Runtime rules

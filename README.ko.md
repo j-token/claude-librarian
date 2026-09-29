@@ -103,15 +103,15 @@ Python 3.9 이상만 있으면 됩니다.
 Claude Code 안에서 아래 명령어를 입력한 다음 `/reload-plugins`를 실행하세요.
 
 ```
-/plugin marketplace add j-token/agent-librarian
-/plugin install agent-librarian@agent-librarian
+/plugin marketplace add j-token/claude-librarian
+/plugin install claude-librarian@claude-librarian
 ```
 
 터미널에서 설치할 수도 있습니다.
 
 ```bash
-claude plugin marketplace add j-token/agent-librarian
-claude plugin install agent-librarian@agent-librarian
+claude plugin marketplace add j-token/claude-librarian
+claude plugin install claude-librarian@claude-librarian
 ```
 
 설치가 끝나면 아래 명령어로 여러분을 위한 "도서관"을 지으세요.

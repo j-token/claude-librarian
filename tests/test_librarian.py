@@ -768,6 +768,7 @@ def test_stop_hook_has_no_update_notice_when_versions_match(project):
 
 
 # the exact lines older versions wrote, kept literal because they test real old documents
+# ("agent-librarian" below is the plugin's old name, intentionally unchanged)
 LEGACY_EN_NOTE = "This repository follows the rules of the `librarian-guide` skill."
 LEGACY_KO_NOTE = "이 저장소는 `librarian-guide` 스킬의 규칙을 따릅니다."
 LEGACY_GITIGNORE = ("node_modules/\n"

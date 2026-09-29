@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""agent-librarian: CLI that maintains a CLAUDE.md document in every folder.
+"""claude-librarian: CLI that maintains a CLAUDE.md document in every folder.
 
 Each document separates the part written by humans/LLMs (folder role, notes, subfolder
 table) from the part written by this script (the index marker block). The notes section is
@@ -91,6 +91,7 @@ PARENT_RE = re.compile(
 LEGACY_SKILL_SOURCE = Path(CONFIG_DIR) / "skills" / "librarian-guide"
 LEGACY_SKILL_LINKS = [Path(agent) / "skills" / "librarian-guide"
                       for agent in (".claude", ".agents", ".codex")]
+# "agent-librarian" is the plugin's old name, kept on purpose: old versions wrote this exact line
 LEGACY_GITIGNORE_COMMENT = "# agent-librarian: skill links (restored automatically by check)"
 LEGACY_GITIGNORE_LINES = {f"/{link.as_posix()}" for link in LEGACY_SKILL_LINKS}
 # Config keys of removed features: maxEntries (index-row split warning), injectRules

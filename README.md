@@ -100,15 +100,15 @@ You only need Python 3.9 or later.
 Run these inside Claude Code, then run `/reload-plugins`.
 
 ```
-/plugin marketplace add j-token/agent-librarian
-/plugin install agent-librarian@agent-librarian
+/plugin marketplace add j-token/claude-librarian
+/plugin install claude-librarian@claude-librarian
 ```
 
 You can also do the same from a terminal:
 
 ```bash
-claude plugin marketplace add j-token/agent-librarian
-claude plugin install agent-librarian@agent-librarian
+claude plugin marketplace add j-token/claude-librarian
+claude plugin install claude-librarian@claude-librarian
 ```
 
 Once the plugin is installed, build your "library" with one of the commands below.
