@@ -1,6 +1,6 @@
 ---
 name: update-library
-description: Brings an existing claude-librarian library up to date with the installed plugin version. Updates the config keys, removes the rules skill links older versions installed, converts AGENTS.md folder documents to CLAUDE.md, and reformats every folder document.
+description: Brings an existing claude-librarian library up to date with the installed plugin version. Updates the config keys, moves the index out of folder documents into the catalog, and removes what older versions installed.
 disable-model-invocation: true
 ---
 
@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 `<plugin>` is the plugin root, two levels above this SKILL.md. Run every command from the project root.
 
-This updates the library in the project. To update the plugin itself, the user runs `/plugin update` (Claude Code) first.
+This updates the library in the project. To update the plugin itself, the user runs `/plugin update` first.
 
 ## 1. Run the update
 
@@ -16,19 +16,23 @@ This updates the library in the project. To update the plugin itself, the user r
 python <plugin>/scripts/librarian.py update
 ```
 
-It does four things:
-- Fills in missing keys in `.librarian/config.json` with their defaults (for example `maxDocLines`, the line limit of a document, default 200), removes keys of removed features, and records the current plugin version in `libraryVersion`.
-- Removes what older versions installed for the `librarian-guide` rules skill: its links under `.claude/skills`, `.agents/skills`, and `.codex/skills` (and those folders when they end up empty), and their `.gitignore` entries. A copied folder there whose files differ from `.librarian/skills/librarian-guide` is left in place with a `warning`.
-- Rewrites every folder document in the current format. Roles that are already written are kept, an empty notes section (`## Notes`, or `## 메모` in Korean) is added to documents that lack one, and the old one-line pointer to the rules skill is removed from the root document. When an index table is longer than `maxDocLines`, it is moved into `index.md` (and further into an `index/` folder) automatically, and levels that are no longer needed are merged back.
-- Converts folder documents that older versions wrote as `AGENTS.md` (the `docName` setting, including the `both` mode where `CLAUDE.md` held only `@AGENTS.md`) to `CLAUDE.md`. The folder document is always `CLAUDE.md` now, and the plugin supports only Claude Code.
+It does the following:
+- Fills in missing keys in `.librarian/config.json` with their defaults, removes keys of removed features (including `docName`), and records the current plugin version in `libraryVersion`. A `maxDocLines` still at the old default of 200 becomes 60.
+- Removes the generated index from every folder document, and deletes generated `index.md` and `index/` files. A hand-written `index.md` is left alone. Definitions are now looked up in the catalog (`.librarian/catalog.json`, kept out of git by `.librarian/.gitignore`), which `update` builds.
+- Moves folder documents an `AGENTS.md`-mode library kept in `AGENTS.md` to `CLAUDE.md`.
+- Removes what older versions installed for the `librarian-guide` rules skill: its links under `.claude/skills`, `.agents/skills`, and `.codex/skills`, and their `.gitignore` entries. A copied folder whose files differ from `.librarian/skills/librarian-guide` is left in place with a `warning`.
+- Rewrites every folder document in the current format. Roles and user-written Notes are kept.
 
-## 2. Leftover rules skill folder
+## 2. Leftovers to report, not delete
 
-If the output has a `warning` about `.librarian/skills/librarian-guide` or one of its copies, that folder is no longer used but was left in place, because the user may have added their own text to it. Tell the user; do not delete it on your own.
+- A `warning` about `.librarian/skills/librarian-guide` or one of its copies: that folder is no longer used but may hold the user's own text.
+- A `warning` that a folder "holds no code": older versions wrote documents in every folder; only folders with code are maintained now. The user may want to keep notes from it before deleting it.
+
+Tell the user about each; do not delete them on your own.
 
 ## 3. Report
 
 Report to the user:
-- What was created or updated
+- What was created, updated, or removed
 - Any `role needed` entries. Offer to fill them in following `<plugin>/skills/rebuild-library/references/cataloger.md`, in the library language.
-- Any folder depth warnings (`warning`). Do not restructure folders; only pass them on to the user.
+- Any folder depth or document length warnings (`warning`). Do not restructure folders; use the `rule-creator` skill for overlong working rules.

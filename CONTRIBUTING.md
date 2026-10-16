@@ -24,20 +24,21 @@ claude --plugin-dir /path/to/claude-librarian
 
 - **Standard library only.** Code under `scripts/` must run on Python 3.9+ with nothing but the standard library. Do not add runtime dependencies. Keep `from __future__ import annotations` at the top of each module so newer type syntax stays 3.9-compatible.
 - **Development tools are the exception.** Files under `dev/` may use extra packages (for example `tree-sitter-language-pack`), because they are never run by users.
-- **Claude Code only.** The plugin supports only Claude Code, and its manifest is `.claude-plugin/plugin.json`. Do not add support for other agents. When you add or change a hook in `hooks/hooks.json`:
-  - Read the plugin root from `CLAUDE_PLUGIN_ROOT`.
+- **Claude Code only.** The plugin ships one manifest, `.claude-plugin/plugin.json`, and Claude Code discovers `hooks/hooks.json` at its default path. When you add or change a hook:
+  - Reference the plugin with `"${CLAUDE_PLUGIN_ROOT}/scripts/librarian.py"`.
   - Keep the `python3 ... || python ...` fallback, since either name may be missing.
   - Copy the command format of the existing hooks.
+- **Keep hook output small.** Hook text goes into the model's context. Cap lists (see `PENDING_LIST_LIMIT`), and do not report problems the agent cannot act on.
 - **Hooks never break the session.** A hook must not raise an error that stops the user's work. Catch failures, report them on stderr, and let the session continue (see `cmd_hook` in `scripts/librarian.py`).
 
 ## Library principles
 
 These rules are the core of the project. Changes that break them will not be accepted.
 
-- **Generated documents never describe what a function or file does.** The index lists only file, function, start line and end line. Describing behavior invites wrong descriptions (hallucination).
-- **Only the script writes the index.** Nothing else may edit the content between `<!-- librarian:index:start -->` and `<!-- librarian:index:end -->`, the generated `index.md`, or the files in the generated `index/` folder.
-- **Generated files are overwritten or deleted only when they carry the generated marker.** Generated files begin with `<!-- librarian:generated -->`. A human-written `index.md` or a source folder named `index` is never touched.
-- **Roles written by people or agents are never lost.** Any change to document generation must keep existing role text and the text of the notes section. The script always generates the notes heading but never fills it in.
+- **Generated output never describes what a function or file does.** The catalog lists only file, symbol, start line and end line. Describing behavior invites wrong descriptions (hallucination).
+- **Folder documents hold only what people and agents write.** Derived data (the catalog) lives under `.librarian/`, out of git and out of `CLAUDE.md`, because Claude Code loads a folder's `CLAUDE.md` and its parents' whenever it reads a file there. Query it on demand with `find`, `grep`, and `outline`.
+- **The catalog must not silently miss definitions.** An agent trusts a lookup more than a grep; a definition the extractor skips is worse than no catalog. Test extractor changes on real legacy code (see Tests).
+- **Roles written by people or agents are never lost.** Any change to document generation must keep existing role text.
 
 ## Language
 
