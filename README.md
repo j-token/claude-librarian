@@ -157,7 +157,35 @@ Use `/plugin update claude-librarian@claude-librarian`, then reload the plugins 
 
 Updating the plugin does not change a library that already exists. Run `/update-library` after updating the plugin; the end-of-turn hook also reminds you if the library was built with an older version. The skill updates the config keys, rewrites every folder document in the current format while keeping the roles you wrote, and builds the catalog.
 
-Upgrading from 0.6 or earlier: the generated index leaves every `CLAUDE.md`, and generated `index.md` and `index/` files are deleted; definitions move to the catalog. Folder documents kept in `AGENTS.md` move to `CLAUDE.md`. Documents older versions wrote in folders without code are reported, not deleted. Libraries built with older versions also had a rules skill (`librarian-guide`); `/update-library` removes its links and `.gitignore` entries, and tells you to delete `.librarian/skills/librarian-guide` yourself once you have kept anything you added there.
+#### Upgrading from 0.6 or earlier to 0.7
+
+0.7 takes the generated index out of the folder documents. Definitions are no longer written into any `CLAUDE.md`, `index.md`, or `index/` file; they live in a catalog that agents query with commands. Roles and Notes you wrote are kept.
+
+1. Commit or stash your work first, so the update's changes stay in a diff of their own.
+2. Update the plugin with `/plugin update claude-librarian@claude-librarian`, then run `/reload-plugins` or restart Claude Code.
+3. Run `/update-library`. It:
+   - removes the index block from every `CLAUDE.md`;
+   - deletes the `index.md` and `index/` files older versions generated (files without the generated marker, such as a hand-written `index.md`, are kept);
+   - moves folder documents kept in `AGENTS.md` to `CLAUDE.md`;
+   - changes `maxDocLines` from the old default of 200 to 60 (a value you set yourself is kept), and records `libraryVersion`;
+   - builds `.librarian/catalog.json` and adds `.librarian/.gitignore`, which keeps the catalog out of git.
+4. Review the result with `git status`. Expect many deleted `index.md` and `index/` files, modified `CLAUDE.md` files, a modified `.librarian/config.json`, and a new `.librarian/.gitignore`.
+5. Act on the warnings it prints:
+   - **A folder that "holds no code":** older versions wrote a document in every folder. Keep any notes you need from it, then delete it yourself.
+   - **`.librarian/skills/librarian-guide`:** the old rules skill. `/update-library` removes its links and `.gitignore` entries; delete the folder once you have kept anything you added there.
+   - **A document longer than `maxDocLines`:** shorten it with the `rule-creator` skill, or set a larger `maxDocLines` in `.librarian/config.json`.
+6. Commit the changes, including `.librarian/.gitignore`. Never commit `catalog.json`; it is rebuilt from the code.
+
+What changes in daily use:
+
+| Before (0.6) | After (0.7) |
+|---|---|
+| Index tables in every `CLAUDE.md`, spilling into `index.md` and `index/` | Lookups with `find`, `grep`, and `outline`; the session-start hook tells the agent how |
+| Every code edit rewrote index tables, so small changes made large document diffs | Documents change only when folders are added, removed, or renamed |
+| The post-edit hook injected notes after edits | No post-edit output; the end-of-turn hook asks for roles only of folders created that turn |
+| `maxDocLines` default 200 | Default 60, counting only the text people write |
+
+To go back, revert the update commit and reinstall the older plugin version. The update changes only files in your project.
 
 ## Instructions for agents
 

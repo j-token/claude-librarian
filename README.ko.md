@@ -157,7 +157,35 @@ claude plugin install claude-librarian@claude-librarian
 
 플러그인을 업데이트해도 이미 만든 도서관은 바뀌지 않습니다. 업데이트한 뒤에는 `/update-library`를 실행하세요. 도서관이 예전 버전으로 만들어졌으면 매 턴 종료 훅도 알려 줍니다. 이 스킬은 설정 항목을 현재 버전에 맞추고, 이미 쓴 역할은 그대로 둔 채 모든 폴더 문서를 현재 형식으로 고치고, 목록을 만듭니다.
 
-0.6 이하에서 올라오는 경우, 모든 `CLAUDE.md`에서 생성된 인덱스가 빠지고 생성된 `index.md`, `index/` 파일은 지워집니다. 정의 위치는 목록으로 옮겨 갑니다. `AGENTS.md`에 있던 폴더 문서는 `CLAUDE.md`로 옮겨집니다. 예전 버전이 코드가 없는 폴더에 만든 문서는 지우지 않고 알려만 줍니다. 예전 버전으로 만든 도서관에는 관리지침 스킬(`librarian-guide`)이 있었습니다. `/update-library`는 그 스킬의 연결과 `.gitignore` 항목을 지우고, `.librarian/skills/librarian-guide`는 직접 추가한 내용을 옮긴 뒤 지우라고 알려 줍니다.
+#### 0.6 이하에서 0.7로 업데이트하기
+
+0.7부터는 생성된 인덱스가 폴더 문서에서 빠집니다. 정의 위치는 더 이상 `CLAUDE.md`, `index.md`, `index/` 파일에 적지 않고, 에이전트가 명령으로 조회하는 목록에 둡니다. 직접 쓴 역할과 메모는 그대로 남습니다.
+
+1. 먼저 하던 작업을 커밋하거나 stash하세요. 그래야 업데이트로 생긴 변경만 따로 볼 수 있습니다.
+2. `/plugin update claude-librarian@claude-librarian`으로 플러그인을 업데이트한 뒤 `/reload-plugins`를 실행하거나 Claude Code를 재시작하세요.
+3. `/update-library`를 실행하세요. 이 스킬은 다음을 합니다.
+   - 모든 `CLAUDE.md`에서 인덱스 블록을 지웁니다.
+   - 예전 버전이 생성한 `index.md`와 `index/` 파일을 지웁니다. 생성 마커가 없는 파일(직접 쓴 `index.md` 등)은 남깁니다.
+   - `AGENTS.md`에 있던 폴더 문서를 `CLAUDE.md`로 옮깁니다.
+   - `maxDocLines`가 예전 기본값 200이면 60으로 바꾸고(직접 정한 값은 유지), `libraryVersion`을 기록합니다.
+   - `.librarian/catalog.json`을 만들고, 목록을 git에서 제외하는 `.librarian/.gitignore`를 추가합니다.
+4. `git status`로 결과를 확인하세요. 지워진 `index.md`·`index/` 파일이 많이 보이고, 수정된 `CLAUDE.md` 파일들과 `.librarian/config.json`, 새 `.librarian/.gitignore`가 보이는 것이 정상입니다.
+5. 출력된 경고를 처리하세요.
+   - **"holds no code" 폴더:** 예전 버전은 모든 폴더에 문서를 만들었습니다. 필요한 메모를 옮긴 뒤 직접 지우세요.
+   - **`.librarian/skills/librarian-guide`:** 예전 관리지침 스킬입니다. `/update-library`가 연결과 `.gitignore` 항목은 지웁니다. 직접 추가한 내용을 옮긴 뒤 폴더를 지우세요.
+   - **`maxDocLines`보다 긴 문서:** `rule-creator` 스킬로 줄이거나, `.librarian/config.json`에서 `maxDocLines`를 늘리세요.
+6. `.librarian/.gitignore`를 포함해 변경을 커밋하세요. `catalog.json`은 코드에서 다시 만들어지므로 커밋하지 않습니다.
+
+평소 사용에서 달라지는 점:
+
+| 이전 (0.6) | 이후 (0.7) |
+|---|---|
+| 모든 `CLAUDE.md`에 인덱스 표가 있고, 길면 `index.md`와 `index/`로 넘어감 | `find`, `grep`, `outline`으로 조회. 세션 시작 훅이 에이전트에게 방법을 알려 줌 |
+| 코드를 고칠 때마다 인덱스 표가 바뀌어, 작은 변경에도 문서 diff가 커짐 | 폴더를 추가·삭제·이름 변경할 때만 문서가 바뀜 |
+| 편집 후 훅이 안내를 주입함 | 편집 후 출력 없음. 매 턴 종료 훅은 그 턴에 새로 생긴 폴더의 역할만 요청함 |
+| `maxDocLines` 기본값 200 | 기본값 60. 사람이 쓴 글만 셈 |
+
+되돌리려면 업데이트 커밋을 revert하고 예전 플러그인 버전을 다시 설치하세요. 업데이트는 프로젝트 안의 파일만 바꿉니다.
 
 ## 에이전트를 위한 지침
 
