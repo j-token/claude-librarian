@@ -87,7 +87,7 @@ src/pray.c:1846-1883 dopray
 - **End of each turn**: creates documents for new code folders, updates subfolder tables, and asks the agent to fill in empty roles. It lists at most 10 folders at a time.
 
 C catalogs include K&R-style definitions, whose parameter declarations sit between `)` and `{`.
-Definitions inside a function body are not cataloged; use the `grep` command for those. `find '^name$'` also matches methods, whose catalog names carry their class (`Class.name`).
+Python catalogs include definitions nested in functions, named `outer.inner`. In the other languages, definitions inside a function body are not cataloged; use the `grep` command for those. `find '^name$'` also matches methods, whose catalog names carry their class (`Class.name`).
 
 Installing the library adds the following to your project:
 

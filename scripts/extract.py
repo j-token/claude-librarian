@@ -4,13 +4,15 @@ extract_symbols(path) returns [(name, start_line, end_line)] with 1-based, inclu
 The start line is the line that holds the declaration's name; the end line is the last line
 of the declaration. Methods are prefixed with their container ("Class.method").
 
-- Python uses the standard `ast` module (end line: the node's end_lineno).
+- Python uses the standard `ast` module (end line: the node's end_lineno). Definitions
+  nested in functions are listed too ("outer.inner").
 - Brace languages (JS/TS, Go, Rust, Java, C#, C, C++) use a small scanner: comments and
   string literals are blanked out (newlines kept, so offsets and lines stay valid), the
   remaining text is tokenized, and declarations are recognized statement by statement
   while a scope stack tracks braces. A declaration with a body ends at the line of the `}`
   that closes it (the last line of the file when it is never closed); a declaration without
   a body ends at its terminating `;`, or at its last token when nothing terminates it.
+  Definitions inside function bodies are not listed.
 - Markdown lists its headings ("## Install"); a section runs to the line before the next
   heading of the same or a higher level, so it includes its subsections.
 - CSS lists rule blocks by their selector or at-rule header ("@media print > .card" for
@@ -145,12 +147,12 @@ def _python(text: str) -> list[tuple[str, int, int]]:
         for node in body:
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 out.append((".".join(scope + [node.name]), name_line(node), node.end_lineno))
+                visit(node.body, scope + [node.name])
             elif isinstance(node, ast.ClassDef):
                 out.append((".".join(scope + [node.name]), name_line(node), node.end_lineno))
                 visit(node.body, scope + [node.name])
             else:
-                # descend into if/try/with/for/while/match blocks in source order,
-                # never into functions
+                # descend into if/try/with/for/while/match blocks in source order
                 visit(getattr(node, "body", None) or [], scope)
                 for handler in getattr(node, "handlers", None) or []:
                     visit(handler.body, scope)
